@@ -1718,4 +1718,9 @@ async function startServer() {
   });
 }
 
-startServer();
+// Only start the server locally if not deploying as a Vercel Serverless Function
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;
