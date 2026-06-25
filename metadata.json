@@ -1,0 +1,6 @@
+{
+  "name": "EduQuiz Pro",
+  "description": "Hệ thống trò chơi trắc nghiệm tương tác thông minh kết hợp Gamification, AI soạn đề và Giám sát thời gian thực.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
