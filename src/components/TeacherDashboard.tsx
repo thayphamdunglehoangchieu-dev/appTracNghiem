@@ -46,10 +46,10 @@ export default function TeacherDashboard({ onBackToRole }: { onBackToRole: () =>
   // Tabs
   const [activeTab, setActiveTab] = useState<"monitor" | "ai_setup" | "reports" | "api_keys">("monitor");
 
-  // API Keys state
-  const [apiKeys, setApiKeys] = useState<any[]>([]);
-  const [rawKeys, setRawKeys] = useState<string[]>(["", "", "", ""]);
-  const [showKeys, setShowKeys] = useState<boolean[]>([false, false, false, false]);
+  // API Key state
+  const [apiKeyStatus, setApiKeyStatus] = useState<any>(null);
+  const [rawKey, setRawKey] = useState<string>("");
+  const [showKey, setShowKey] = useState<boolean>(false);
   const [keysMessage, setKeysMessage] = useState("");
   const [isSavingKeys, setIsSavingKeys] = useState(false);
   const [isResettingKeys, setIsResettingKeys] = useState(false);
@@ -112,26 +112,14 @@ export default function TeacherDashboard({ onBackToRole }: { onBackToRole: () =>
       const res = await fetch("/api/keys");
       if (res.ok) {
         const data = await res.json();
-        setApiKeys(data.keys || []);
-        if (data.rawKeys && Array.isArray(data.rawKeys)) {
-          setRawKeys(data.rawKeys);
+        setApiKeyStatus(data.key || null);
+        if (data.rawKey) {
+          setRawKey(data.rawKey);
         }
       }
     } catch (err) {
-      console.error("Lỗi khi tải API Keys:", err);
+      console.error("Lỗi khi tải API Key:", err);
     }
-  };
-
-  const handleKeyInputChange = (index: number, value: string) => {
-    const updated = [...rawKeys];
-    updated[index] = value;
-    setRawKeys(updated);
-  };
-
-  const toggleKeyVisibility = (index: number) => {
-    const updated = [...showKeys];
-    updated[index] = !updated[index];
-    setShowKeys(updated);
   };
 
   const handleSaveKeys = async (e: React.FormEvent) => {
@@ -142,7 +130,7 @@ export default function TeacherDashboard({ onBackToRole }: { onBackToRole: () =>
       const res = await fetch("/api/keys/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keys: rawKeys }),
+        body: JSON.stringify({ key: rawKey }),
       });
       
       let data: any = {};
@@ -155,11 +143,11 @@ export default function TeacherDashboard({ onBackToRole }: { onBackToRole: () =>
       }
 
       if (res.ok) {
-        setApiKeys(data.keys);
-        setKeysMessage("✓ Đã lưu cấu hình 4 API Keys thành công!");
+        setApiKeyStatus(data.key);
+        setKeysMessage("✓ Đã lưu cấu hình API Key thành công!");
         setTimeout(() => setKeysMessage(""), 4000);
       } else {
-        throw new Error(data.error || "Gặp lỗi khi lưu API keys.");
+        throw new Error(data.error || "Gặp lỗi khi lưu API key.");
       }
     } catch (err: any) {
       setKeysMessage(`Lỗi: ${err.message}`);
@@ -184,8 +172,8 @@ export default function TeacherDashboard({ onBackToRole }: { onBackToRole: () =>
       }
 
       if (res.ok) {
-        setApiKeys(data.keys);
-        setKeysMessage("✓ Đã đặt lại trạng thái hoạt động cho tất cả API Keys.");
+        setApiKeyStatus(data.key);
+        setKeysMessage("✓ Đã đặt lại trạng thái hoạt động cho API Key.");
         setTimeout(() => setKeysMessage(""), 4000);
       } else {
         throw new Error(data.error || "Lỗi đặt lại trạng thái.");
@@ -896,40 +884,15 @@ export default function TeacherDashboard({ onBackToRole }: { onBackToRole: () =>
       {/* ----------------- TAB: AI SOẠN ĐỀ (AI & OCR) ----------------- */}
       {activeTab === "ai_setup" && (
         <div className="space-y-4 w-full">
-          {/* Cảnh báo API Keys */}
-          {apiKeys.length === 0 || apiKeys.every(k => k.status === "unconfigured" || k.status === "exhausted" || k.status === "expired" || k.status === "invalid") ? (
+          {/* Cảnh báo API Key máy chủ */}
+          {(!apiKeyStatus || apiKeyStatus.status === "unconfigured" || apiKeyStatus.status === "exhausted" || apiKeyStatus.status === "expired" || apiKeyStatus.status === "invalid") && (
             <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-2xl flex items-start gap-3 shadow-sm">
               <AlertTriangle className="text-red-600 shrink-0 mt-0.5 animate-pulse" size={20} />
               <div>
-                <p className="font-extrabold text-sm text-red-900">⚠️ Chưa có API Key nào hoạt động hoặc cấu hình!</p>
+                <p className="font-extrabold text-sm text-red-900">⚠️ API Key máy chủ chưa được cấu hình hoặc gặp lỗi!</p>
                 <p className="text-xs mt-1 text-red-700 leading-relaxed font-medium">
-                  Hệ thống hiện không có API Key hoạt động nào. Hãy cấu hình API keys trong tab <button type="button" onClick={() => setActiveTab("api_keys")} className="text-indigo-600 underline font-bold hover:text-indigo-800 cursor-pointer">Cấu hình API Keys</button> để có thể bóc tách đề bằng AI. Nếu không, hệ thống sẽ sử dụng ngân hàng đề mẫu.
+                  Hệ thống hiện không có API Key hoạt động trên máy chủ. Hãy cấu hình API Key trong tab <button type="button" onClick={() => setActiveTab("api_keys")} className="text-indigo-600 underline font-bold hover:text-indigo-800 cursor-pointer">Cấu hình API Key</button> để có thể bóc tách đề bằng AI. Nếu không, hệ thống sẽ sử dụng ngân hàng đề mẫu.
                 </p>
-              </div>
-            </div>
-          ) : apiKeys.some(k => k.status === "exhausted" || k.status === "expired" || k.status === "invalid") ? (
-            <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-2xl flex items-start gap-3 shadow-sm">
-              <AlertTriangle className="text-amber-600 shrink-0 mt-0.5" size={20} />
-              <div>
-                <p className="font-extrabold text-sm text-amber-900">⚠️ Một số API Keys đã hết hạn ngạch hoặc token!</p>
-                <p className="text-xs mt-1 text-amber-700 leading-relaxed font-medium">
-                  Phát hiện một số API keys đã hết token hoặc bị hỏng. Hệ thống vẫn còn key hoạt động và sẽ tự động xoay vòng sang key khác. Bạn có thể kiểm tra chi tiết hoặc thay thế trong tab <button type="button" onClick={() => setActiveTab("api_keys")} className="text-indigo-600 underline font-bold hover:text-indigo-800 cursor-pointer">Cấu hình API Keys</button>.
-                </p>
-              </div>
-            </div>
-          ) : null}
-
-          {/* Nhật ký xoay vòng API Keys nếu có */}
-          {rotationLogs && rotationLogs.length > 0 && (
-            <div className="bg-indigo-50 border border-indigo-200 text-indigo-800 p-4 rounded-2xl flex items-start gap-3 shadow-sm">
-              <RefreshCw className="text-indigo-600 shrink-0 mt-0.5 animate-spin" size={20} />
-              <div>
-                <p className="font-extrabold text-sm text-indigo-900">ℹ️ Nhật ký xoay vòng API Keys tự động</p>
-                <ul className="list-disc list-inside text-xs mt-1 text-indigo-700 font-medium space-y-1">
-                  {rotationLogs.map((log, lIdx) => (
-                    <li key={lIdx}>{log}</li>
-                  ))}
-                </ul>
               </div>
             </div>
           )}
@@ -1415,7 +1378,7 @@ export default function TeacherDashboard({ onBackToRole }: { onBackToRole: () =>
         </div>
       )}
 
-      {/* ----------------- TAB: CẤU HÌNH API KEYS ----------------- */}
+      {/* ----------------- TAB: CẤU HÌNH API KEY ----------------- */}
       {activeTab === "api_keys" && (
         <div className="space-y-6">
           {/* Header Description */}
@@ -1423,11 +1386,11 @@ export default function TeacherDashboard({ onBackToRole }: { onBackToRole: () =>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <Key className="text-indigo-600" size={24} />
-                <h3 className="text-lg font-black text-slate-800">Quản Lý & Xoay Vòng 4 API Keys</h3>
+                <h3 className="text-lg font-black text-slate-800">Quản Lý API Key Máy Chủ</h3>
               </div>
               <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                Hệ thống hỗ trợ nạp 4 API keys cùng lúc để tối đa hóa hạn ngạch quét tài liệu/hình ảnh đề thi.
-                Khi một key hết token hoặc hết hạn, hệ thống sẽ tự động xoay vòng và tiếp tục công việc mà không làm gián đoạn trải nghiệm của thầy cô.
+                Cấu hình API Key Gemini của hệ thống dùng để bóc tách tài liệu và hình ảnh đề thi.
+                Thầy cô có thể kích hoạt lại trạng thái hoạt động của key nếu key bị đánh dấu tạm dừng do lỗi hết quota hoặc sai cấu hình.
               </p>
             </div>
             
@@ -1438,14 +1401,14 @@ export default function TeacherDashboard({ onBackToRole }: { onBackToRole: () =>
               className="px-4 py-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <RefreshCw size={14} className={isResettingKeys ? "animate-spin" : ""} />
-              Kích hoạt lại tất cả Keys
+              Kích hoạt lại API Key
             </button>
           </div>
 
           {/* Key Status Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[0, 1, 2, 3].map((idx) => {
-              const keyStatus = apiKeys[idx] || { index: idx, status: "unconfigured", keyMasked: "Chưa cấu hình" };
+          <div className="max-w-md">
+            {(() => {
+              const keyStatus = apiKeyStatus || { status: "unconfigured", keyMasked: "Chưa cấu hình" };
               
               let statusLabel = "Chưa cấu hình";
               let statusBg = "bg-slate-100 text-slate-500 border-slate-200";
@@ -1466,10 +1429,10 @@ export default function TeacherDashboard({ onBackToRole }: { onBackToRole: () =>
               }
               
               return (
-                <div key={idx} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between space-y-4">
+                <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between space-y-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">API Key #{idx + 1}</span>
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Trạng thái API Key máy chủ</span>
                       <span className={`px-2 py-0.5 border text-[10px] font-extrabold rounded-full flex items-center gap-1.5 ${statusBg}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
                         {statusLabel}
@@ -1491,7 +1454,7 @@ export default function TeacherDashboard({ onBackToRole }: { onBackToRole: () =>
                   </div>
                 </div>
               );
-            })}
+            })()}
           </div>
 
           {/* Configuration Form */}
@@ -1502,30 +1465,26 @@ export default function TeacherDashboard({ onBackToRole }: { onBackToRole: () =>
             </div>
 
             <form onSubmit={handleSaveKeys} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[0, 1, 2, 3].map((idx) => (
-                  <div key={idx} className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-500 uppercase">
-                      Gemini API Key #{idx + 1}
-                    </label>
-                    <div className="relative rounded-lg shadow-sm">
-                      <input
-                        type={showKeys[idx] ? "text" : "password"}
-                        value={rawKeys[idx] || ""}
-                        onChange={(e) => handleKeyInputChange(idx, e.target.value)}
-                        placeholder="Dán API Key (AIzaSy...) tại đây"
-                        className="w-full p-2.5 pr-10 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => toggleKeyVisibility(idx)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
-                      >
-                        {showKeys[idx] ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-                  </div>
-                ))}
+              <div className="max-w-md space-y-1.5">
+                <label className="block text-xs font-bold text-slate-500 uppercase">
+                  Gemini API Key hệ thống
+                </label>
+                <div className="relative rounded-lg shadow-sm">
+                  <input
+                    type={showKey ? "text" : "password"}
+                    value={rawKey || ""}
+                    onChange={(e) => setRawKey(e.target.value)}
+                    placeholder="Dán API Key (AIzaSy...) tại đây"
+                    className="w-full p-2.5 pr-10 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowKey(!showKey)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               {keysMessage && (
@@ -1541,7 +1500,7 @@ export default function TeacherDashboard({ onBackToRole }: { onBackToRole: () =>
                   className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-bold text-sm rounded-xl shadow-md transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   {isSavingKeys ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
-                  Lưu cấu hình API Keys
+                  Lưu cấu hình API Key
                 </button>
               </div>
             </form>
