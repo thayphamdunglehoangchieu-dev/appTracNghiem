@@ -144,7 +144,16 @@ export default function TeacherDashboard({ onBackToRole }: { onBackToRole: () =>
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ keys: rawKeys }),
       });
-      const data = await res.json();
+      
+      let data: any = {};
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        data = { error: text.slice(0, 150) || `Lỗi Server (Mã: ${res.status})` };
+      }
+
       if (res.ok) {
         setApiKeys(data.keys);
         setKeysMessage("✓ Đã lưu cấu hình 4 API Keys thành công!");
@@ -164,7 +173,16 @@ export default function TeacherDashboard({ onBackToRole }: { onBackToRole: () =>
     setKeysMessage("");
     try {
       const res = await fetch("/api/keys/reset", { method: "POST" });
-      const data = await res.json();
+      
+      let data: any = {};
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        data = { error: text.slice(0, 150) || `Lỗi Server (Mã: ${res.status})` };
+      }
+
       if (res.ok) {
         setApiKeys(data.keys);
         setKeysMessage("✓ Đã đặt lại trạng thái hoạt động cho tất cả API Keys.");
@@ -284,7 +302,15 @@ export default function TeacherDashboard({ onBackToRole }: { onBackToRole: () =>
         }),
       });
 
-      const data = await res.json();
+      let data: any = {};
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        data = { error: text.slice(0, 150) || `Lỗi kết nối Server (Mã: ${res.status})` };
+      }
+
       if (!res.ok) {
         throw new Error(data.error || "Lỗi bóc tách tài liệu.");
       }
@@ -343,7 +369,15 @@ export default function TeacherDashboard({ onBackToRole }: { onBackToRole: () =>
         }),
       });
 
-      const data = await res.json();
+      let data: any = {};
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        data = { error: text.slice(0, 150) || `Lỗi kết nối Server (Mã: ${res.status})` };
+      }
+
       if (!res.ok) {
         throw new Error(data.error || "Lỗi chuẩn hóa LaTeX.");
       }
@@ -385,7 +419,15 @@ export default function TeacherDashboard({ onBackToRole }: { onBackToRole: () =>
         }),
       });
 
-      const data = await res.json();
+      let data: any = {};
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        data = { error: text.slice(0, 150) || `Lỗi kết nối Server (Mã: ${res.status})` };
+      }
+
       if (!res.ok) {
         throw new Error(data.error || "Lỗi tạo lời giải chi tiết.");
       }
